@@ -1,15 +1,20 @@
 # Render Blueprint — deploy the NestJS backend as a long-running web service.
 #
 # How to use:
-#   1. Create the production PostgreSQL database first (e.g. Neon / Supabase /
-#      Render Postgres) and copy its connection string.
-#   2. Import this repository on https://render.com (New → Blueprint, or New →
-#      Web Service pointing at this repo's backend/ directory).
+#   1. Create the production PostgreSQL database first (e.g. Neon) and copy its
+#      connection string into DATABASE_URL in the Render dashboard.
+#   2. Import this repository on https://render.com (New → Blueprint).
 #   3. Fill in the secrets below in the Render dashboard (DATABASE_URL,
 #      JWT_SECRET, JWT_REFRESH_SECRET, payment keys).
 #
 # The backend is a persistent Node process — it is NOT serverless, which is why
 # it runs here (Render / Railway / Fly.io) instead of Vercel. See README §13.5.
+#
+# Note on migrations: Render's free tier does NOT support preDeployCommand, so
+# `prisma migrate deploy` runs as part of the build command instead. It only
+# applies committed migrations from prisma/migrations/ (never dev snapshots) and
+# is idempotent, so it is safe to run on every deploy. If a migration fails the
+# build fails, and Render keeps the previous healthy version running.
 
 services:
   - type: web
@@ -17,8 +22,10 @@ services:
     runtime: node
     plan: free
     rootDir: backend
-    buildCommand: npm install && npm run build
-    preDeployCommand: npx prisma migrate deploy
+    # Install deps → generate Prisma Client → apply committed migrations to the
+    # production DB → build the NestJS app. (No preDeployCommand: unsupported
+    # on free tier.)
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run build
     startCommand: npm run start:prod
     healthCheckPath: /api/docs
     envVars:
