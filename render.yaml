@@ -1,0 +1,64 @@
+# Render Blueprint — deploy the NestJS backend as a long-running web service.
+#
+# How to use:
+#   1. Create the production PostgreSQL database first (e.g. Neon / Supabase /
+#      Render Postgres) and copy its connection string.
+#   2. Import this repository on https://render.com (New → Blueprint, or New →
+#      Web Service pointing at this repo's backend/ directory).
+#   3. Fill in the secrets below in the Render dashboard (DATABASE_URL,
+#      JWT_SECRET, JWT_REFRESH_SECRET, payment keys).
+#
+# The backend is a persistent Node process — it is NOT serverless, which is why
+# it runs here (Render / Railway / Fly.io) instead of Vercel. See README §13.5.
+
+services:
+  - type: web
+    name: sales-book-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/docs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Public URL of this service, e.g. https://sales-book-backend.onrender.com
+      # Fill the placeholder after the first deploy (Render gives you the URL).
+      - key: FRONTEND_URL
+        value: https://your-frontend.vercel.app
+      # Comma-separated list of the exact frontend + super-admin origins
+      - key: CORS_ORIGINS
+        value: https://your-frontend.vercel.app,https://your-super-admin.vercel.app
+      - key: PORT
+        value: "3002"
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+
+      # --- Secrets — set these in the Render dashboard (never in git) ---
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL
+        sync: false
+      - key: FLUTTERWAVE_SECRET_KEY
+        sync: false
+      - key: FLUTTERWAVE_PUBLIC_KEY
+        sync: false
+      - key: FLUTTERWAVE_CALLBACK_URL
+        sync: false
+      - key: FLUTTERWAVE_WEBHOOK_HASH
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

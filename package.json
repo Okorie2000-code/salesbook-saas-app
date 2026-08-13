@@ -1,0 +1,33 @@
+{
+  "name": "sales-book-saas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-tenant SaaS platform that helps SMEs manage daily sales operations digitally",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "super-admin"
+  ],
+  "scripts": {
+    "dev": "concurrently -n backend,frontend,super-admin -c blue,green,magenta \"npm run start:dev -w backend\" \"npm run dev -w frontend\" \"npm run dev -w super-admin\"",
+    "dev:backend": "npm run start:dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:super-admin": "npm run dev -w super-admin",
+    "dev:admin": "npm run dev -w super-admin",
+    "build": "npm run build -w backend && npm run build -w frontend && npm run build -w super-admin",
+    "db:migrate": "npm run prisma:migrate -w backend",
+    "db:deploy": "npm run prisma:deploy -w backend",
+    "db:seed": "npm run prisma:seed -w backend",
+    "db:studio": "npm run prisma:studio -w backend",
+    "test": "npm run test -w backend",
+    "deploy:frontend": "vercel --cwd frontend --prod",
+    "deploy:super-admin": "vercel --cwd super-admin --prod"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "vercel": "^58.11.0"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}
