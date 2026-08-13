@@ -18,6 +18,7 @@ services:
     plan: free
     rootDir: backend
     buildCommand: npm install && npm run build
+    preDeployCommand: npx prisma migrate deploy
     startCommand: npm run start:prod
     healthCheckPath: /api/docs
     envVars:
