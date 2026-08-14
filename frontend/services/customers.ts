@@ -14,7 +14,7 @@ export function getCustomers(params: { page?: number; limit?: number; search?: s
   if (params.page) qs.set('page', String(params.page));
   if (params.limit) qs.set('limit', String(params.limit));
   if (params.search) qs.set('search', params.search);
-  if (params.archived !== undefined) qs.set('archived', String(params.archived));
+  if (params.archived !== undefined) qs.set('includeArchived', String(params.archived));
   return api(`/customers?${qs.toString()}`);
 }
 

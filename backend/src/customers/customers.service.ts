@@ -15,13 +15,25 @@ export class CustomersService {
     private readonly usage: UsageService,
   ) {}
 
+  /**
+   * Blank strings from forms become null before writing. Without this, an empty
+   * email is stored as "" which collides with the @@unique([businessId, email])
+   * constraint on the second customer created without an email (500 error).
+   */
+  private cleanEmail(value: string | undefined | null): string | null | undefined {
+    if (value == null) return value === undefined ? undefined : null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed.toLowerCase() : null;
+  }
+
   async create(businessId: string, dto: CreateCustomerDto) {
     // Enforce the plan's MAX_CUSTOMERS limit server-side before creating
     await this.usage.assertLimit(businessId, FEATURE_KEYS.MAX_CUSTOMERS);
 
-    if (dto.email) {
+    const email = this.cleanEmail(dto.email);
+    if (email) {
       const duplicate = await this.prisma.customer.findUnique({
-        where: { businessId_email: { businessId, email: dto.email.toLowerCase() } },
+        where: { businessId_email: { businessId, email } },
       });
       if (duplicate) throw new BadRequestException('A customer with this email already exists');
     }
@@ -30,7 +42,7 @@ export class CustomersService {
       data: {
         businessId,
         name: dto.name,
-        email: dto.email?.toLowerCase(),
+        email,
         phone: dto.phone,
         address: dto.address,
         notes: dto.notes,
@@ -99,7 +111,7 @@ export class CustomersService {
       where: { id },
       data: {
         name: dto.name,
-        email: dto.email?.toLowerCase(),
+        email: this.cleanEmail(dto.email),
         phone: dto.phone,
         address: dto.address,
         notes: dto.notes,
@@ -111,5 +123,11 @@ export class CustomersService {
   async archive(businessId: string, id: string) {
     await this.findOne(businessId, id);
     return this.prisma.customer.update({ where: { id }, data: { isArchived: true } });
+  }
+
+  /** Bring an archived customer back. */
+  async restore(businessId: string, id: string) {
+    await this.findOne(businessId, id);
+    return this.prisma.customer.update({ where: { id }, data: { isArchived: false } });
   }
 }

@@ -15,13 +15,25 @@ export class ProductsService {
     private readonly usage: UsageService,
   ) {}
 
+  /**
+   * Blank strings from forms become null before writing. Without this, an empty
+   * SKU is stored as "" which collides with the @@unique([businessId, sku])
+   * constraint on the second product created without a SKU (500 error).
+   */
+  private cleanOptional(value: string | undefined | null): string | null | undefined {
+    if (value == null) return value === undefined ? undefined : null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+
   async create(businessId: string, dto: CreateProductDto) {
     // Enforce the plan's MAX_PRODUCTS limit server-side before creating
     await this.usage.assertLimit(businessId, FEATURE_KEYS.MAX_PRODUCTS);
 
-    if (dto.sku) {
+    const sku = this.cleanOptional(dto.sku);
+    if (sku) {
       const duplicate = await this.prisma.product.findUnique({
-        where: { businessId_sku: { businessId, sku: dto.sku } },
+        where: { businessId_sku: { businessId, sku } },
       });
       if (duplicate) throw new BadRequestException('A product with this SKU already exists');
     }
@@ -30,9 +42,9 @@ export class ProductsService {
       data: {
         businessId,
         name: dto.name,
-        description: dto.description,
-        sku: dto.sku,
-        category: dto.category,
+        description: this.cleanOptional(dto.description),
+        sku,
+        category: this.cleanOptional(dto.category),
         price: dto.price,
         costPrice: dto.costPrice,
         stockQuantity: dto.stockQuantity,
@@ -92,13 +104,24 @@ export class ProductsService {
 
   async update(businessId: string, id: string, dto: UpdateProductDto) {
     await this.findOne(businessId, id);
+
+    const sku = this.cleanOptional(dto.sku);
+    if (sku) {
+      const duplicate = await this.prisma.product.findUnique({
+        where: { businessId_sku: { businessId, sku } },
+      });
+      if (duplicate && duplicate.id !== id) {
+        throw new BadRequestException('A product with this SKU already exists');
+      }
+    }
+
     return this.prisma.product.update({
       where: { id },
       data: {
         name: dto.name,
-        description: dto.description,
-        sku: dto.sku,
-        category: dto.category,
+        description: this.cleanOptional(dto.description),
+        sku,
+        category: this.cleanOptional(dto.category),
         price: dto.price,
         costPrice: dto.costPrice,
         stockQuantity: dto.stockQuantity,
@@ -110,5 +133,11 @@ export class ProductsService {
   async archive(businessId: string, id: string) {
     await this.findOne(businessId, id);
     return this.prisma.product.update({ where: { id }, data: { isArchived: true } });
+  }
+
+  /** Bring an archived product back so it can be sold again. */
+  async restore(businessId: string, id: string) {
+    await this.findOne(businessId, id);
+    return this.prisma.product.update({ where: { id }, data: { isArchived: false } });
   }
 }

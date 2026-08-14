@@ -40,9 +40,21 @@ export class CustomersController {
     return this.customersService.update(businessId, id, dto);
   }
 
-  @Delete(':id')
+  @Patch(':id/archive')
   @ApiOperation({ summary: 'Archive a customer' })
   archive(@CurrentBusinessId() businessId: string, @Param('id') id: string) {
+    return this.customersService.archive(businessId, id);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({ summary: 'Restore an archived customer' })
+  restore(@CurrentBusinessId() businessId: string, @Param('id') id: string) {
+    return this.customersService.restore(businessId, id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Archive a customer' })
+  archiveLegacy(@CurrentBusinessId() businessId: string, @Param('id') id: string) {
     return this.customersService.archive(businessId, id);
   }
 }

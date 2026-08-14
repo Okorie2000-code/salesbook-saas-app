@@ -46,9 +46,21 @@ export class ProductsController {
     return this.productsService.update(businessId, id, dto);
   }
 
-  @Delete(':id')
+  @Patch(':id/archive')
   @ApiOperation({ summary: 'Archive a product' })
   archive(@CurrentBusinessId() businessId: string, @Param('id') id: string) {
+    return this.productsService.archive(businessId, id);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({ summary: 'Restore an archived product' })
+  restore(@CurrentBusinessId() businessId: string, @Param('id') id: string) {
+    return this.productsService.restore(businessId, id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Archive a product' })
+  archiveLegacy(@CurrentBusinessId() businessId: string, @Param('id') id: string) {
     return this.productsService.archive(businessId, id);
   }
 }

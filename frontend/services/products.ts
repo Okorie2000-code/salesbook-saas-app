@@ -17,7 +17,7 @@ export function getProducts(params: { page?: number; limit?: number; search?: st
   if (params.limit) qs.set('limit', String(params.limit));
   if (params.search) qs.set('search', params.search);
   if (params.category) qs.set('category', params.category);
-  if (params.archived !== undefined) qs.set('archived', String(params.archived));
+  if (params.archived !== undefined) qs.set('includeArchived', String(params.archived));
   return api(`/products?${qs.toString()}`);
 }
 
